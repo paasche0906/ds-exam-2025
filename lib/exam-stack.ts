@@ -8,12 +8,10 @@ import { generateBatch } from "../shared/util";
 import { movieCrew } from "../seed/movies";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import * as events from "aws-cdk-lib/aws-lambda-event-sources";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
-import { CfnAppImageConfig } from "aws-cdk-lib/aws-sagemaker";
 
 
 export class ExamStack extends cdk.Stack {
@@ -22,7 +20,6 @@ export class ExamStack extends cdk.Stack {
 
     // Question 1 - Serverless REST API
 
-    // A table that stores data about a movie's crew, i.e. director, camera operators, etc.
     const table = new dynamodb.Table(this, "MoviesTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "movieId", type: dynamodb.AttributeType.NUMBER },
@@ -52,14 +49,14 @@ export class ExamStack extends cdk.Stack {
             [table.tableName]: generateBatch(movieCrew),
           },
         },
-        physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
+        physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"),
       },
       policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
         resources: [table.tableArn],
       }),
     });
 
-    // permissions
+    // Permissions
     table.grantReadData(question1Fn)
 
     const api = new apig.RestApi(this, "ExamAPI", {
@@ -83,19 +80,18 @@ export class ExamStack extends cdk.Stack {
     // Add GET method with role query parameter
     movieResource.addMethod("GET", new apig.LambdaIntegration(question1Fn), {
       requestParameters: {
-        "method.request.querystring.role": true,  // role is required
+        "method.request.querystring.role": true,
       },
     });
 
     // Modified endpoint with optional role parameter
     movieResource.addMethod("GET", new apig.LambdaIntegration(question1Fn), {
       requestParameters: {
-        "method.request.querystring.role": false,  // Now optional
+        "method.request.querystring.role": false,
       },
     });
 
     const anEndpoint = api.root.addResource("patha");
-    // ... existing API setup ...
 
 
 
