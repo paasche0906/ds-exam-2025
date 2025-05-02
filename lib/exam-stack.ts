@@ -15,6 +15,7 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import { CfnAppImageConfig } from "aws-cdk-lib/aws-sagemaker";
 
+
 export class ExamStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -141,29 +142,38 @@ export class ExamStack extends cdk.Stack {
       },
     });
 
-    
     // SNS Topic -> SQS Queue A
     topic1.addSubscription(new subs.SqsSubscription(queueA, {
       filterPolicy: {
-        'address.country': subs.FilterOrPolicy.filter({
-          allowlist: ['Ireland', 'China']
-        })
+        'address.country': sns.SubscriptionFilter.stringFilter({
+          allowlist: ['Ireland', 'China'],
+        }),
       }
     }));
-    
+
     // SNS Topic -> Lambda Y
     topic1.addSubscription(new subs.LambdaSubscription(lambdaYFn, {
       filterPolicy: {
-        'address.country': subs.FilterOrPolicy.filter({
-          denylist: ['Ireland', 'China']
-        })
+        'address.country': sns.SubscriptionFilter.stringFilter({
+          denylist: ['Ireland', 'China'],
+        }),
+        'email': sns.SubscriptionFilter.existsFilter(),
       }
     }));
-    
 
     // SQS Queue A -> Lambda X
     lambdaXFn.addEventSource(new events.SqsEventSource(queueA));
 
+
+    // Add new subscription for Queue B (missing email)
+    topic1.addSubscription(new subs.SqsSubscription(queueB, {
+      filterPolicy: {
+        'address.country': sns.SubscriptionFilter.stringFilter({
+          allowlist: ['Ireland', 'China'],
+        }),
+        'email': sns.SubscriptionFilter.existsFilter(),
+      }
+    }));
   }
 }
 
