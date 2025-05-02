@@ -42,7 +42,6 @@ export class ExamStack extends cdk.Stack {
       },
     });
 
-
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
         service: "DynamoDB",
@@ -58,6 +57,9 @@ export class ExamStack extends cdk.Stack {
         resources: [table.tableArn],
       }),
     });
+
+    // permissions
+    table.grantReadData(question1Fn)
 
     const api = new apig.RestApi(this, "ExamAPI", {
       description: "Exam api",
@@ -84,6 +86,14 @@ export class ExamStack extends cdk.Stack {
       },
     });
 
+    // Modified endpoint with optional role parameter
+    movieResource.addMethod("GET", new apig.LambdaIntegration(question1Fn), {
+      requestParameters: {
+        "method.request.querystring.role": false,  // Now optional
+      },
+    });
+
+    // ... rest of existing code ...
     const anEndpoint = api.root.addResource("patha");
 
 
