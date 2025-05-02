@@ -93,8 +93,8 @@ export class ExamStack extends cdk.Stack {
       },
     });
 
-    // ... rest of existing code ...
     const anEndpoint = api.root.addResource("patha");
+    // ... existing API setup ...
 
 
 
@@ -140,6 +140,15 @@ export class ExamStack extends cdk.Stack {
         REGION: "eu-west-1",
       },
     });
+
+    // SNS Topic -> SQS Queue A
+    topic1.addSubscription(new subs.SqsSubscription(queueA));
+
+    // SNS Topic -> Lambda Y
+    topic1.addSubscription(new subs.LambdaSubscription(lambdaYFn));
+
+    // SQS Queue A -> Lambda X
+    lambdaXFn.addEventSource(new events.SqsEventSource(queueA));
 
   }
 }
